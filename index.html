@@ -16,19 +16,10 @@
 
     <link rel="stylesheet" href="css/reveal.css">
     <link rel="stylesheet" href="css/theme/sky.css" id="theme">
-    <link rel="stylesheet" href="css/dev2devops.css">
+    <link rel="stylesheet" href="css/meet-the-slas.css">
 
     <!-- For syntax highlighting -->
     <link rel="stylesheet" href="lib/css/zenburn.css">
-
-    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
-    <script>
-      document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
-    </script>
-
-    <!--[if lt IE 9]>
-    <script src="lib/js/html5shiv.js"></script>
-    <![endif]-->
   </head>
   <body>
     <div class='screen-logo'>
@@ -42,11 +33,8 @@
         <section>
           <h3>Meet the SLAs</h3>
           <p>Building Rails for scale</p>
-          <ul>
           <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
-          <li><small>dgobhai@constantcontact.com</small></li>
-          <li><small>@tallfriend</small></li>
-          </ul>
+          <p>@tallfriend</p>
         </section>
 
         <section>
@@ -60,72 +48,42 @@
         <section>
           <p>dev-setup.md</p>
           <pre>
-            <code class='md'>
-              # Running integration tests
-
-              Start the api on 4001
-                /contacts-service  rails s -e test -p 4001
-
-              Run integration tests
-                /contacts-ui rspec spec/integration
+            <code>
+            1  # Running integration tests
+            2
+            3  Start the api on 4001
+            4    /contacts-service  rails s -e test -p 4001
+            5
+            6  Run integration tests
+            7
+            8      /contacts-ui rspec spec/integration
             </code>
           </pre>
         </section>
 
-                <section>
+         <section>
           <p>dev-setup.md</p>
           <pre>
-            <code class='md'>
-              # Running integration tests
-
-              Start the api on 4001
-                /contacts-service  rails s -e test -p 4001
-
-              Run integration tests
-                /contacts-ui rspec spec/integration
+            <code>
+            543  ## Run the app
+            544
+            545   rails s
             </code>
           </pre>
         </section>
-
-                <section>
-          <p>dev-setup.md</p>
-          <pre>
-            <code class='md'>
-              # Running integration tests
-
-              Start the api on 4001
-                /contacts-service  rails s -e test -p 4001
-
-              Run integration tests
-                /contacts-ui rspec spec/integration
-            </code>
-          </pre>
-        </section>
-
-        <section>
-          <p>dev-setup.md</p>
-          <pre>
-            <code class='md'>
-              # Running integration tests
-
-              Start the api on 4001
-                /contacts-service  rails s -e test -p 4001
-
-              Run integration tests
-                /contacts-ui rspec spec/integration
-            </code>
-          </pre>
-        </section>
-
-        <section>
-          <h2>Cell</h2>
-          <img src='cell-diagram.gif' />
-        </section>
-
 
         <section>
           <h2>Stay on the path!</h2>
-          <img src='golden-path.gif' />
+          <img src='img/golden-path.gif' />
+        </section>
+
+        <section>
+          <h2>Cell Architecture</h2>
+          <p>f1 load balancer with iRule</p>
+          <p>8 instances Torquebox app servers</p>
+          <p>MySQL master, slave</p>
+          <p>Redis Server</p>
+          <p>Memcached Server</p>
         </section>
 
         <section>
@@ -145,43 +103,45 @@
       render status: 200, json: ContactsSelector.count_people(params)
     end
   end
-</code>
-</pre>
+          </code>
+          </pre>
+        </section>
+
+
+        <section>
+          <h2>Rails &amp; N+1</h2>
+          <p><a href='http://blog.bigbinary.com/2013/07/01/preload-vs-eager-load-vs-joins-vs-includes.html'>Preload, Eagerload, Includes and Joins</a></p>
+          <div class='joins'>
+          <p class='title'>Preload</p>
+          <p> Separate queries for associated tables.</p>
+          <p class='title'>Eager load</p>
+          <p>One query with all associations 'LEFT OUTER' joined.</p>
+          <p class='title'>Includes</p>
+          <p>Picks one of the above.</p>
+          <p class='title'>Joins</p>
+          <p>One query with all associations 'INNER' joined.</p>
+          </div>
         </section>
 
         <section>
-          <h2>Benchmarking</h2>
-          <img src='golden-path.gif' />
-        </section>
-
-        <section>
-          <h2>N+1</h2>
-          <h2>Preload</h2>
-          <p>Preload loads the association data in a separate query. always generates two sql</p>
-          <h2>Includes</h2>
-          <p>Includes attempts to run two queries, but switches to a 'LEFT OUTER JOIN'</p>
-          <h2>Eager load</h2>
-          <p>eager loading loads all association in a single query using LEFT OUTER JOIN.</p>
-        </section>
-
-        <section>
-          <h2>Advanced aRel: When ActiveRecord Just Isn't Enough</h2>
-          <p>https://www.youtube.com/watch?v=ShPAxNcLm3o</p>
+          <h2>Advanced aRel</h2>
+          <p><a href='https://www.youtube.com/watch?v=ShPAxNcLm3o'>https://www.youtube.com/watch?v=ShPAxNcLm3o</a></p>
           <pre>
-          <code class="ruby">
-.where(
-  "author.name = ? and posts.active = ?",
-  "Jane", true
-)
-
-Post
-  .joins(:comments)
-  .joins(Comments.joins(:author).join_sources)
+            <code class="ruby">
   .where(
-    Author[:name].eq('Jane')
-    .and(Post[:active].eq(true))
+    "author.name = ? and posts.active = ?",
+    "Jane", true
   )
-  </code></pre>
+
+  Post
+    .joins(:comments)
+    .joins(Comments.joins(:author).join_sources)
+    .where(
+      Author[:name].eq('Jane')
+      .and(Post[:active].eq(true))
+    )
+            </code>
+          </pre>
         </section>
 
         <section>
@@ -195,82 +155,100 @@ Post
           <p>Rails anti-pattern?</p>
           <p>Multiple-column index is faster than multiple indexs</p>
           <pre>
-          <code class='ruby'>
-          class Contact < ActiveRecord::Base
-            primary_key [:account_id, :contact_id]
-            ...
-          end
-          </code></pre>
+            <code class='ruby'>
+  class Contact &gt; ActiveRecord::Base
+    primary_key [:account_id, :contact_id]
+    ...
+  end
+            </code>
+          </pre>
+          <p><a href="https://github.com/composite-primary-keys/composite_primary_keys">github.com/composite_primary_keys</a></p>
+          <p><a href="http://www.percona.com/blog/2014/01/03/multiple-column-index-vs-multiple-indexes-with-mysql-56/">percona.com/multiple-column-index-vs-multiple-indexes</a></p>
         </section>
 
         <section>
           <h2>Megamorphic!</h2>
-          <pre><code class='ruby'>
-    class Foo
-      def do_something; end
+          <pre>
+            <code class='ruby'>
+  class Foo
+    def do_something
+      puts 'foo!'
     end
+  end
 
-    class Bar
-      def do_something; end
+  class Bar
+    def do_something
+      puts 'bar?'
     end
+  end
 
-    [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
-      obj.do_something # inline cached, eventually JITs
-    end
-    </code></pre>
-    </section>
-
+  [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
+    obj.do_something # inline cached, eventually JITs
+  end
+            </code>
+          </pre>
+        </section>
 
         <section>
           <h2>Megamorphic!</h2>
-          <pre><code class='ruby'>
-    class Foo
-      def do_something; end
-    end
+          <pre>
+            <code class='ruby'>
+  class Foo ... ; end
+  class Bar ... ; end
 
-    class Bar ... ; end
+  [Foo.new, Bar.new, Foo.new, Bar.new].each ...
 
-    [Foo.new, Bar.new, Foo.new, Bar.new].each ...
+  # Polymorphic in-line cached code-path
+  case obj.class
+  when Foo
+    puts 'foo!'
+  when Bar
+    puts 'bar?'
+  else
+    # singletons, made by extending Foo or Bar...
+    lookup ...
+  end
+            </code>
+          </pre>
 
-    # Polymorphic in-line cached code-path
-    case obj.class
-    when Foo
-      Foo.do_something
-    when Bar
-      Bar.do_something
-    else
-      lookup ...
-    end
+          <p><a href="https://github.com/charliesome/charlie.bz/blob/master/posts/things-that-clear-rubys-method-cache.md">github.com/charliesome/...rubys-method-cache</a></p>
+        </section>
 
-    </code></pre>
-    </section>
+        <section>
+          <h2>ActiveRecord is expensive</h2>
+          <pre>
+            <code class="ruby">
+              class Contact
+                has_many :addresses, dependent: :destroy
+              ...
 
-        <section class='links'>
+              def all_contact_ids
+                Contact.all.map &amp;:contact_id
+              ...
+            </code>
+          </pre>
           <ul>
-            <li><a href="http://www.devopsdays.org/">DevOpsDays</a></li>
-            <li><a href='http://velocityconf.com/velocity2009'>Velocity Conference 2009, San Jose</a></li>
-            <li><a href='http://velocityconference.blip.tv/file/2284377/'>10+ Deploys Per Day: Dev and Ops Cooperation at Flickr</a></li>
-            <li><a href='http://continuousdelivery.com/2012/10/theres-no-such-thing-as-a-devops-team/'>No such thing as a DevOps team</a></li>
-            <li><a href='http://www.youtube.com/watch?v=disjFj4ruHg'>Why We Need DevOps Now</a></li>
-            <li><a href='http://info.puppetlabs.com/2013-state-of-devops-report.html'>State of DevOps 2013 - Puppet Report</a></li>
-            <li><a href="http://network.intuit.com/2011/04/20/leadership-in-the-agile-age/">Scott Cook on TurboTax @ Economist conference 2011</a></li>
-            <li><a href="http://dotfiles.github.io/">.Dotfiles</a></li>
-            <li><a href="http://docs.puppetlabs.com/learning/">Learning Puppet</a></li>
-            <li><a href="http://forge.puppetlabs.com/">Puppet Forge</a></li>
-            <li><a href='http://boxen.github.com/'>Boxen</a></li>
-            <li><a href="http://vimeo.com/61172067">Boxen presentation: Managing an army of laptops</a></li>
-            <li><a href='http://www.opscode.com/chef/'>Opscode</a></li>
-            <li><a href="http://docs.opscode.com/">Learning Chef</a></li>
-            <li><a href="https://github.com/opscode-cookbooks">Chef Cookbooks</a></li>
-            <li><a href='http://www.youtube.com/watch?v=ZC91gZv-Uao'>Chef intro: TDDing tmux</a></li>
-            <li><a href="http://techblog.netflix.com/2012/07/chaos-monkey-released-into-wild.html">Netflix: Chaos Monkey</a></li>
-            <li><a href="https://blog.twitter.com/2010/murder-fast-datacenter-code-deploys-using-bittorrent">Twitter Murder!</a></li>
-            <li><a href="http://www.youtube.com/watch?v=-LxavzqLHj8">ChatOps at Github</a></li>
-            <li><a href="http://assets.en.oreilly.com/1/event/60/Velocity%20Culture%20Presentation.pdf">Amazon: A deploy every 11 seconds slides</a></li>
+          <li>Batch insert and deletes</li>
           </ul>
         </section>
 
         <section>
+          <h2>Exceptions are expensive</h2>
+          <pre>
+            <code class="ruby">
+              def create
+                Contact.create! params
+              rescue ActiveRecord::RecordInvalid -> e
+                render status: 422, json: { errors: e.message }
+              end
+            </code>
+          </pre>
+        </section>
+
+        <section>
+          <h3>MEASURE FIRST</h3>
+          <h3>MEASURE AFTER</h3>
+          <h3>MEASURE OFTEN</h3>
           <h2>Meet the SLAs</h2>
           <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
         </section>

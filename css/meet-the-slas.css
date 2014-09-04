@@ -33,3 +33,13 @@ section.the-wall-goes-up h3 span {
   background: rgba(0,0,0,.05);
 }
 
+.joins {
+  background-color: #ffe;
+  padding: 25px !important;
+  border:1px solid #000 !important;
+  text-align: left;
+}
+
+.joins .title {
+  font-weight: bold;
+}
