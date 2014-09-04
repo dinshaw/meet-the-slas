@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Meet the SLAs</title>
+
+    <meta name="description" content="Scaling Contacts 2.0">
+    <meta name="author" content="Dinshaw Gobhai">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/sky.css" id="theme">
+    <link rel="stylesheet" href="css/dev2devops.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+    <script>
+      document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class='screen-logo'>
+      <div style='position: absolute; left: 20px; bottom: 20px; opacity: 0.5;'>
+        <img src='img/constant-contact-logo.png' width='250'>
+      </div>
+    </div>
+    <div class="reveal">
+      <!-- Any section element inside of this container is displayed as a slide -->
+      <div class="slides">
+        <section>
+          <h3>Meet the SLAs</h3>
+          <p>Building Rails for scale</p>
+          <ul>
+          <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
+          <li><small>dgobhai@constantcontact.com</small></li>
+          <li><small>@tallfriend</small></li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Building for scale?</h2>
+          <p>Don't do it.</p>
+          <p>Don't over architect.</p>
+          <p>Don't prematurely engineer.</p>
+          <p>Don't solve problems you don't have yet.</p>
+        </section>
+
+        <section>
+          <p>dev-setup.md</p>
+          <pre>
+            <code class='md'>
+              # Running integration tests
+
+              Start the api on 4001
+                /contacts-service  rails s -e test -p 4001
+
+              Run integration tests
+                /contacts-ui rspec spec/integration
+            </code>
+          </pre>
+        </section>
+
+                <section>
+          <p>dev-setup.md</p>
+          <pre>
+            <code class='md'>
+              # Running integration tests
+
+              Start the api on 4001
+                /contacts-service  rails s -e test -p 4001
+
+              Run integration tests
+                /contacts-ui rspec spec/integration
+            </code>
+          </pre>
+        </section>
+
+                <section>
+          <p>dev-setup.md</p>
+          <pre>
+            <code class='md'>
+              # Running integration tests
+
+              Start the api on 4001
+                /contacts-service  rails s -e test -p 4001
+
+              Run integration tests
+                /contacts-ui rspec spec/integration
+            </code>
+          </pre>
+        </section>
+
+        <section>
+          <p>dev-setup.md</p>
+          <pre>
+            <code class='md'>
+              # Running integration tests
+
+              Start the api on 4001
+                /contacts-service  rails s -e test -p 4001
+
+              Run integration tests
+                /contacts-ui rspec spec/integration
+            </code>
+          </pre>
+        </section>
+
+        <section>
+          <h2>Cell</h2>
+          <img src='cell-diagram.gif' />
+        </section>
+
+
+        <section>
+          <h2>Stay on the path!</h2>
+          <img src='golden-path.gif' />
+        </section>
+
+        <section>
+          <h2>Api GET: 500 contacts json</h2>
+          <p>SLA: &lt; 500ms</p>
+          <p>Actual: ~ 44s</p>
+        </section>
+
+        <section>
+          <h2>Profiling &amp; Benchmarks</h2>
+          <p>Ruby-prof/Dtrace</p>
+          <p>Hand-rolled benchmarking</p>
+          <pre>
+          <code class='ruby'>
+  def count
+    Benchmark.realtime "Count people" do
+      render status: 200, json: ContactsSelector.count_people(params)
+    end
+  end
+</code>
+</pre>
+        </section>
+
+        <section>
+          <h2>Benchmarking</h2>
+          <img src='golden-path.gif' />
+        </section>
+
+        <section>
+          <h2>N+1</h2>
+          <h2>Preload</h2>
+          <p>Preload loads the association data in a separate query. always generates two sql</p>
+          <h2>Includes</h2>
+          <p>Includes attempts to run two queries, but switches to a 'LEFT OUTER JOIN'</p>
+          <h2>Eager load</h2>
+          <p>eager loading loads all association in a single query using LEFT OUTER JOIN.</p>
+        </section>
+
+        <section>
+          <h2>Advanced aRel: When ActiveRecord Just Isn't Enough</h2>
+          <p>https://www.youtube.com/watch?v=ShPAxNcLm3o</p>
+          <pre>
+          <code class="ruby">
+.where(
+  "author.name = ? and posts.active = ?",
+  "Jane", true
+)
+
+Post
+  .joins(:comments)
+  .joins(Comments.joins(:author).join_sources)
+  .where(
+    Author[:name].eq('Jane')
+    .and(Post[:active].eq(true))
+  )
+  </code></pre>
+        </section>
+
+        <section>
+          <h2>Api GET: 500 contacts json</h2>
+          <p>SLA: &lt; 500ms</p>
+          <p>Actual: ~ 26s</p>
+        </section>
+
+        <section>
+          <h2>Composite Primary Keys</h2>
+          <p>Rails anti-pattern?</p>
+          <p>Multiple-column index is faster than multiple indexs</p>
+          <pre>
+          <code class='ruby'>
+          class Contact < ActiveRecord::Base
+            primary_key [:account_id, :contact_id]
+            ...
+          end
+          </code></pre>
+        </section>
+
+        <section>
+          <h2>Megamorphic!</h2>
+          <pre><code class='ruby'>
+    class Foo
+      def do_something; end
+    end
+
+    class Bar
+      def do_something; end
+    end
+
+    [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
+      obj.do_something # inline cached, eventually JITs
+    end
+    </code></pre>
+    </section>
+
+
+        <section>
+          <h2>Megamorphic!</h2>
+          <pre><code class='ruby'>
+    class Foo
+      def do_something; end
+    end
+
+    class Bar ... ; end
+
+    [Foo.new, Bar.new, Foo.new, Bar.new].each ...
+
+    # Polymorphic in-line cached code-path
+    case obj.class
+    when Foo
+      Foo.do_something
+    when Bar
+      Bar.do_something
+    else
+      lookup ...
+    end
+
+    </code></pre>
+    </section>
+
+        <section class='links'>
+          <ul>
+            <li><a href="http://www.devopsdays.org/">DevOpsDays</a></li>
+            <li><a href='http://velocityconf.com/velocity2009'>Velocity Conference 2009, San Jose</a></li>
+            <li><a href='http://velocityconference.blip.tv/file/2284377/'>10+ Deploys Per Day: Dev and Ops Cooperation at Flickr</a></li>
+            <li><a href='http://continuousdelivery.com/2012/10/theres-no-such-thing-as-a-devops-team/'>No such thing as a DevOps team</a></li>
+            <li><a href='http://www.youtube.com/watch?v=disjFj4ruHg'>Why We Need DevOps Now</a></li>
+            <li><a href='http://info.puppetlabs.com/2013-state-of-devops-report.html'>State of DevOps 2013 - Puppet Report</a></li>
+            <li><a href="http://network.intuit.com/2011/04/20/leadership-in-the-agile-age/">Scott Cook on TurboTax @ Economist conference 2011</a></li>
+            <li><a href="http://dotfiles.github.io/">.Dotfiles</a></li>
+            <li><a href="http://docs.puppetlabs.com/learning/">Learning Puppet</a></li>
+            <li><a href="http://forge.puppetlabs.com/">Puppet Forge</a></li>
+            <li><a href='http://boxen.github.com/'>Boxen</a></li>
+            <li><a href="http://vimeo.com/61172067">Boxen presentation: Managing an army of laptops</a></li>
+            <li><a href='http://www.opscode.com/chef/'>Opscode</a></li>
+            <li><a href="http://docs.opscode.com/">Learning Chef</a></li>
+            <li><a href="https://github.com/opscode-cookbooks">Chef Cookbooks</a></li>
+            <li><a href='http://www.youtube.com/watch?v=ZC91gZv-Uao'>Chef intro: TDDing tmux</a></li>
+            <li><a href="http://techblog.netflix.com/2012/07/chaos-monkey-released-into-wild.html">Netflix: Chaos Monkey</a></li>
+            <li><a href="https://blog.twitter.com/2010/murder-fast-datacenter-code-deploys-using-bittorrent">Twitter Murder!</a></li>
+            <li><a href="http://www.youtube.com/watch?v=-LxavzqLHj8">ChatOps at Github</a></li>
+            <li><a href="http://assets.en.oreilly.com/1/event/60/Velocity%20Culture%20Presentation.pdf">Amazon: A deploy every 11 seconds slides</a></li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Meet the SLAs</h2>
+          <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
+        </section>
+
+        </div>
+      </div>
+      <script src="lib/js/head.min.js"></script>
+      <script src="js/reveal.min.js"></script>
+
+      <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          // { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          // { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+          // { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+          // { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+      });
+
+      </script>
+    </body>
+  </head>
+</html>

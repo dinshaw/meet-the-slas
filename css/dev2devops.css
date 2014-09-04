@@ -1,0 +1,35 @@
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+  text-transform: none;
+}
+
+section.the-wall-goes-up h3 span {
+  font-size: 0.6em;
+}
+
+.reveal pre {
+  box-shadow: none;
+}
+
+.reveal ul{
+  list-style: circle;
+}
+
+.reveal ul li {
+  padding: 0.2em;
+}
+
+.reveal section.links ul {
+  list-style: none;
+  font-size: 0.5em;
+  line-height: 1.5em;
+}
+
+.reveal blockquote {
+  background: rgba(0,0,0,.05);
+}
+
