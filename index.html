@@ -65,9 +65,18 @@
           <p>dev-setup.md</p>
           <pre>
             <code>
-            543  ## Run the app
-            544
-            545   rails s
+            1     # Development Setup
+            2
+            3     ## Install prerequisites
+            4
+            5       brew install mysql
+
+            ...   ...
+
+            1542
+            1543  ## Run the app
+            1544
+            1545   rails s
             </code>
           </pre>
         </section>
@@ -80,10 +89,10 @@
         <section>
           <h2>Cell Architecture</h2>
           <p>f1 load balancer with iRule</p>
-          <p>8 instances Torquebox app servers</p>
-          <p>MySQL master, slave</p>
-          <p>Redis Server</p>
-          <p>Memcached Server</p>
+          <p>8 Torquebox instances</p>
+          <p>1 Redis Server</p>
+          <p>1 Memcached Server</p>
+          <p>1 MySQL master, 1 slave</p>
         </section>
 
         <section>
