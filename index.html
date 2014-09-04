@@ -35,6 +35,7 @@
           <p>Building Rails for scale</p>
           <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
           <p>@tallfriend</p>
+          <p><a href="https://github.com/dinshaw/meet-the-slas">github.com/dinshaw/meet-the-slas</a></p>
         </section>
 
         <section>
@@ -49,14 +50,13 @@
           <p>dev-setup.md</p>
           <pre>
             <code>
-            1  # Running integration tests
+            1   # Running integration tests
             2
-            3  Start the api on 4001
-            4    /contacts-service  rails s -e test -p 4001
+            3   ## Start the api on 4001
+            4     /contacts-service  rails s -e test -p 4001
             5
-            6  Run integration tests
-            7
-            8      /contacts-ui rspec spec/integration
+            6   ## Run integration tests
+            7      /contacts-ui rspec spec/integration
             </code>
           </pre>
         </section>
@@ -99,6 +99,8 @@
           <h2>Api GET: 500 contacts json</h2>
           <p>SLA: &lt; 500ms</p>
           <p>Actual: ~ 44s</p>
+          <p>---</p>
+          <p>(1B / 500) * 44s = 2.8 years</p>
         </section>
 
         <section>
@@ -121,13 +123,13 @@
           <h2>Rails &amp; N+1</h2>
           <p><a href='http://blog.bigbinary.com/2013/07/01/preload-vs-eager-load-vs-joins-vs-includes.html'>Preload, Eagerload, Includes and Joins</a></p>
           <div class='joins'>
-          <p class='title'>Preload</p>
+          <p class='title'>.preload(:association)</p>
           <p> Separate queries for associated tables.</p>
-          <p class='title'>Eager load</p>
+          <p class='title'>.eager_load(:association)</p>
           <p>One query with all associations 'LEFT OUTER' joined.</p>
-          <p class='title'>Includes</p>
+          <p class='title'>.includes(:association)</p>
           <p>Picks one of the above.</p>
-          <p class='title'>Joins</p>
+          <p class='title'>.joins(:association) </p>
           <p>One query with all associations 'INNER' joined.</p>
           </div>
         </section>
@@ -224,6 +226,51 @@
         </section>
 
         <section>
+        <h2>Megamorphic!</h2>
+          <pre>
+            <code class="ruby">
+  # composite_primary_keys/relation.rb
+  def add_cpk_support
+    class << self
+      include CompositePrimaryKeys::ActiveRecord::Batches
+      include CompositePrimaryKeys::ActiveRecord::Calculations
+      ...
+
+  # patch
+  class CompositePrimaryKeys::ActiveRecord::Relation < ActiveRecord::Relation
+    include CompositePrimaryKeys::ActiveRecord::Batches
+    include CompositePrimaryKeys::ActiveRecord::Calculations
+    ...
+
+  class ActiveRecord::Relation
+    def self.new( klass, ... )
+      klass.composite? ?
+        CompositePrimaryKeys::ActiveRecord::Relation.new : self
+    end
+            </code>
+          </pre>
+        </section>
+
+        <section>
+          <h2>Database partitioning</h2>
+          <p>MySQL Hash partitioning by :account_id</p>
+          <p><a href="http://www.mysql.com/products/enterprise/partitioning.html">mysql.com/products/enterprise/partitioning</a>
+        </section>
+
+        <section>
+          <h2>Api GET: 500 contacts json</h2>
+          <p>SLA: &lt; 500ms</p>
+          <p>Actual: ~ 4s</p>
+          <p>DB: 12ms</p>
+        </section>
+
+        <section>
+          <h2>Serialization</h2>
+          <p>Skip ActiveRecord</p>
+          <p><a href="http://reefpoints.dockyard.com/2014/05/27/avoid-rails-when-generating-json-responses-with-postgresql.html">reefpoints.dockyard.com/.../avoid-rails...json</a></p>
+        </section>
+
+        <section>
           <h2>ActiveRecord is expensive</h2>
           <pre>
             <code class="ruby">
@@ -260,6 +307,8 @@
           <h3>MEASURE OFTEN</h3>
           <h2>Meet the SLAs</h2>
           <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
+          <p>@tallfriend</p>
+          <p><a href="https://github.com/dinshaw/meet-the-slas">github.com/dinshaw/meet-the-slas</a></p>
         </section>
 
         </div>
