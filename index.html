@@ -38,23 +38,6 @@
           <p><a href="https://github.com/dinshaw/meet-the-slas">github.com/dinshaw/meet-the-slas</a></p>
         </section>
 
-        <section>
-          <p>dev-setup.md</p>
-          <pre>
-            <code>
-            1  ## Install prerequisites
-            2     brew install mysql
-            3
-            4  # Running integration tests
-            5  ## Start the api on 4001
-            6    /contacts-service  rails s -e test -p 4001
-            7
-            8  ## Run integration tests
-            9   /contacts-ui rspec spec/integration
-            </code>
-          </pre>
-        </section>
-
          <section>
           <p>dev-setup.md</p>
           <pre>
@@ -64,9 +47,9 @@
 
             ...   ...
 
-            1542
-            1543  ## Run the app
-            1544   rails s
+            1002
+            1003  ## Run the app
+            1004   rails s
             </code>
           </pre>
         </section>
@@ -226,7 +209,7 @@
   end
 
   [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
-    obj.do_something
+    <obj class="do_something"></obj>
   end
 
   case obj.class
