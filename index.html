@@ -85,18 +85,19 @@
           <p>SLA: &lt; 500ms</p>
           <p>Actual: ~ 44s</p>
           <p>---</p>
-          <p>(1B / 500) * 44s = 2.8 years</p>
+          <p>(3M / 500) * 44s = 3 days</p>
+          <p>(3B / 500) * 44s = 8.4 years</p>
         </section>
 
         <section>
           <h2>Profiling &amp; Benchmarks</h2>
           <p>Ruby-prof/Dtrace</p>
-          <p>Hand-rolled benchmarking</p>
+          <p>Benchmark</p>
           <pre>
           <code class='ruby'>
   def count
-    Benchmark.realtime "Count people" do
-      render status: 200, json: ContactsSelector.count_people(params)
+    Benchmark.measure "Count people" do
+      ContactsSelector.count_people(params)
     end
   end
           </code>
@@ -185,40 +186,34 @@
             # knows to just run "pust 'foo!'"
             bar = Foo.new
             bar.do_something
-
-            # Worst case scenario
-            [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
-              obj.do_something
-            end
           </code></pre>
         </section>
         <section>
           <h2>In-line caching  (polymorphic)</h2>
-          <pre>
-            <code class="ruby">
-  class Foo
-    def do_something
-      puts 'foo!'
-    end
-  end
+          <pre><code class="ruby">
+              class Foo
+                def do_something
+                  puts 'foo!'
+                end
+              end
 
-  class Bar
-    def do_something
-      puts 'bar?'
-    end
-  end
+              class Bar
+                def do_something
+                  puts 'bar?'
+                end
+              end
 
-  [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
-    <obj class="do_something"></obj>
-  end
+              # Worst case scenario for Monomorphic
+              [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
+                obj.do_something
+              end
 
-  case obj.class
-  when Foo; puts 'foo!'
-  when Bar; puts 'bar?'
-  else # lookup ...
-  end
-            </code>
-          </pre>
+              case obj.class
+              when Foo; puts 'foo!'
+              when Bar; puts 'bar?'
+              else # lookup ...
+              end
+            </code></pre>
         </section>
 
         <section>
@@ -276,7 +271,6 @@
       <li>Creates array INSIDE A LOOP</li>
       <li>Downcase creates copies of strings</li>
       <li>include? causes both variables to be downcased</li>
-      <li>map, select, reject, inject create new arrays</li>
     </ul>
   </section>
   <section>
@@ -351,7 +345,7 @@
 </section>
 <section>
   <section>
-    <h2>CAUSE: Excessive and Expensive Logging</h2>
+    <h2>Excessive Logging</h2>
     <pre><code class='ruby'>Rails.logger.debug "This is expensive #{some_expensive_method}"</code></pre>
     <ul>
       <li>message is created even if it is below logging level</li>
@@ -362,22 +356,20 @@
     </ul>
   </section>
   <section>
-    <h2>SOLUTION: Be Kind, Log Smart</h2>
+    <h2>Log carefully</h2>
     <pre><code class='ruby'>if Rails.logger.debug?&#x000A;  Rails.logger.debug "This is expensive #{some_expensive_method}"&#x000A;end</code></pre>
     <ul>
       <li>Check if you are logging debug first</li>
     </ul>
-    <pre><code class='ruby'>Rails.logger.debug "processing #{x.size} rows"&#x000A;big_array.each do |x|&#x000A;  ...&#x000A;end</code></pre>
+    <pre><code class='ruby'>Rails.logger.debug "processing #{big_array.size} rows"&#x000A;big_array.each do |x|&#x000A;  ...&#x000A;end</code></pre>
     <ul>
       <li>logger is called once</li>
-      <li>information about array number of iterations is preserved</li>
-      <li>watch out for break outs or exceptions!</li>
     </ul>
   </section>
 </section>
 <section>
   <section>
-    <h2>CAUSE: Too Many AR Instances</h2>
+    <h2>Too Many AR Instances</h2>
     <pre><code class='ruby'>def all_contact_ids&#x000A;  Contact.all.map &:contact_id&#x000A;end</code></pre>
     <ul>
       <li>Creates a lot of objects</li>
@@ -385,7 +377,7 @@
     </ul>
   </section>
   <section>
-    <h2>SOLUTION: Use Pluck</h2>
+    <h2>Use Pluck</h2>
     <pre><code class='ruby'>def all_contact_ids&#x000A;  Contact.all.pluck(:contact_id)&#x000A;end</code></pre>
     <ul>
       <li>Creates a single Array</li>
@@ -397,7 +389,7 @@
 </section>
 <section>
   <section>
-    <h2>CAUSE: Destroying Records Is Slow</h2>
+    <h2>Destroying Records Is Slow</h2>
     <pre><code class='ruby'>class Contact&#x000A;  has_many :addresses, dependent: :destroy&#x000A;&#x000A;  def self.remove_bad_contacts&#x000A;    self.destroy_all(bad_contact: true)&#x000A;  end&#x000A;end&#x000A;</code></pre>
     <ul>
       <li>Instantiates each record</li>
@@ -408,7 +400,7 @@
     <small>If you don't have callbacks that need to run, and you can handle the dependants yourself, this is a big waste of memory and CPU.</small>
   </section>
   <section>
-    <h2>SOLUTION: Use Delete Instead</h2>
+    <h2>Use Delete Instead</h2>
     <pre><code class='ruby'>class Contact&#x000A;  has_many :addresses, dependent: :destroy&#x000A;&#x000A;  scope :bad_contacts, -> { where(bad_contact: true) }&#x000A;&#x000A;  def self.remove_bad_contacts&#x000A;    Address.delete_all contact_id: self.bad_contacts.pluck(:contact_id)&#x000A;    self.bad_contacts.delete_all&#x000A;  end&#x000A;end</code></pre>
     <ul>
       <li>Does not instantiate any AR records</li>
@@ -424,14 +416,14 @@
 </section>
 <section>
   <section>
-    <h2>Problem: Reads for Validation</h2>
+    <h2>Reads for Validation</h2>
     <pre><code class='ruby'>class Contact &lt; ActiveRecord::Base&#x000A;  validates :first_name,  uniqueness: {scope: :last_name}&#x000A;end</code></pre>
     <ul>
       <li>Saving a record requires a read and a write</li>
     </ul>
   </section>
   <section>
-    <h2>Solution: Let the Database do it</h2>
+    <h2>Let the Database do it</h2>
     <pre><code class='ruby'>class Contact &lt; ActiveRecord::Base&#x000A;  around_save :check_uniqueness&#x000A;&#x000A;  def check_uniqueness&#x000A;    yield&#x000A;  rescue ActiveRecord::RecordNotUnique => exception&#x000A;    errors.add :base, "contact is not unique"&#x000A;    raise ActiveRecord::RecordInvalid.new(self)&#x000A;  end&#x000A;end&#x000A;&#x000A;# db migration&#x000A;add_index :contacts, [:firstname, :lastname], :unique => true&#x000A;</code></pre>
     <ul>
       <li>Database index for the unique fields</li>
@@ -443,7 +435,7 @@
 
 <section>
   <section>
-    <h2>Problem: Inserting Multiple Records</h2>
+    <h2>Inserting Multiple Records</h2>
     <ul>
       <li>Many trips to the database</li>
       <li>Database connection churn</li>
@@ -451,7 +443,7 @@
     </ul>
     <div class='fragment'>
       <hr>
-      <h2>Solution: Mass Insert</h2>
+      <h2>Mass Insert</h2>
       <ul>
         <li>Handle Validation Up Front</li>
         <li>Reconsider callbacks</li>
