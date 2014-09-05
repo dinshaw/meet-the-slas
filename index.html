@@ -198,12 +198,15 @@
             foo = Foo.new
             foo.do_something
 
-            ...
-
             # second time
             # knows to just run "pust 'foo!'"
             bar = Foo.new
             bar.do_something
+
+            # Worst case scenario
+            [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
+              obj.do_something
+            end
           </code></pre>
         </section>
         <section>
@@ -223,7 +226,7 @@
   end
 
   [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
-    obj.do_something # inline cached, eventually JITs
+    obj.do_something
   end
 
   case obj.class
