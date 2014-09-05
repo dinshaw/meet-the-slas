@@ -39,24 +39,18 @@
         </section>
 
         <section>
-          <h2>Building for scale?</h2>
-          <p>Don't do it.</p>
-          <p>Don't over architect.</p>
-          <p>Don't prematurely engineer.</p>
-          <p>Don't solve problems you don't have yet.</p>
-        </section>
-
-        <section>
           <p>dev-setup.md</p>
           <pre>
             <code>
-            1   # Running integration tests
-            2
-            3   ## Start the api on 4001
-            4     /contacts-service  rails s -e test -p 4001
-            5
-            6   ## Run integration tests
-            7      /contacts-ui rspec spec/integration
+            1  ## Install prerequisites
+            2     brew install mysql
+            3
+            4  # Running integration tests
+            5  ## Start the api on 4001
+            6    /contacts-service  rails s -e test -p 4001
+            7
+            8  ## Run integration tests
+            9   /contacts-ui rspec spec/integration
             </code>
           </pre>
         </section>
@@ -65,31 +59,39 @@
           <p>dev-setup.md</p>
           <pre>
             <code>
-            1     # Development Setup
-            2
-            3     ## Install prerequisites
-            4
-            5       brew install mysql
+            1  ## Install prerequisites
+            2     brew install mysql
 
             ...   ...
 
             1542
             1543  ## Run the app
-            1544
-            1545   rails s
+            1544   rails s
             </code>
           </pre>
         </section>
 
         <section>
-          <h2>Stay on the path!</h2>
+          <h2>The golden path</h2>
           <img src='img/golden-path.gif' />
         </section>
 
         <section>
+          <h2>Building for scale?</h2>
+          <p>Don't do it.</p>
+          <p>Don't over architect.</p>
+          <p>Don't prematurely engineer.</p>
+          <p>Don't solve problems you don't have yet.</p>
+        </section>
+        <section>
+          <h2>Measure</h2>
+        </section>
+
+        <section>
           <h2>Cell Architecture</h2>
-          <p>f1 load balancer with iRule</p>
-          <p>8 Torquebox instances</p>
+          <img src="img/cell.gif" />
+          <p>iRule to direct requests by :account_id</p>
+          <p>8 Torquebox instances (96 app servers)</p>
           <p>1 Redis Server</p>
           <p>1 Memcached Server</p>
           <p>1 MySQL master, 1 slave</p>
@@ -179,8 +181,35 @@
 
         <section>
           <h2>In-line caching</h2>
+          <p>Remember a previous method lookup, directly at call site.</p>
+        </section>
+
+        <section>
+          <h2>In-line caching (monomorphic)</h2>
+          <pre><code class="ruby">
+            class Foo
+              def do_someting
+                puts 'foo!'
+              end
+            end
+
+            # first time does a full lookup of .do_something
+            # stores "puts 'foo!'" at the call site, or 'in-line'
+            foo = Foo.new
+            foo.do_something
+
+            ...
+
+            # second time
+            # knows to just run "pust 'foo!'"
+            bar = Foo.new
+            bar.do_something
+          </code></pre>
+        </section>
+        <section>
+          <h2>In-line caching  (polymorphic)</h2>
           <pre>
-            <code class='ruby'>
+            <code class="ruby">
   class Foo
     def do_something
       puts 'foo!'
@@ -196,28 +225,11 @@
   [Foo.new, Bar.new, Foo.new, Bar.new].each do |obj|
     obj.do_something # inline cached, eventually JITs
   end
-            </code>
-          </pre>
-        </section>
 
-        <section>
-          <h2>In-line caching</h2>
-          <pre>
-            <code class='ruby'>
-  class Foo ... ; end
-  class Bar ... ; end
-
-  [Foo.new, Bar.new, Foo.new, Bar.new].each ...
-
-  # :do_somethning polymorphic in-line cached code-path
   case obj.class
-  when Foo
-    puts 'foo!'
-  when Bar
-    puts 'bar?'
-  else
-    # singletons, made by extending Foo or Bar...
-    lookup ...
+  when Foo; puts 'foo!'
+  when Bar; puts 'bar?'
+  else # lookup ...
   end
             </code>
           </pre>
@@ -225,7 +237,6 @@
 
         <section>
         <h2>Megamorphic!</h2>
-
           <p><a href="https://github.com/charliesome/charlie.bz/blob/master/posts/things-that-clear-rubys-method-cache.md">github.com/charliesome/...rubys-method-cache</a></p>
           <pre>
             <code class="ruby">
@@ -253,6 +264,7 @@
 
         <section>
           <h2>Database partitioning</h2>
+          <p>Tables still too big - millions of Contacts per cell</p>
           <p>MySQL Hash partitioning by :account_id</p>
           <p><a href="http://www.mysql.com/products/enterprise/partitioning.html">mysql.com/products/enterprise/partitioning</a>
         </section>
@@ -271,44 +283,207 @@
         </section>
 
         <section>
-          <h2>ActiveRecord is expensive</h2>
-          <pre>
-            <code class="ruby">
-              class Contact
-                has_many :addresses, dependent: :destroy
-              ...
+  <section>
+    <h2>CAUSE: Too much stuff</h2>
+    <pre><code class='ruby'>string = params[:country]&#x000A;country = COUNTRY_CODE_MAP.detect do |k,v|&#x000A;  [k.downcase, v.downcase].include? string.downcase&#x000A;end</code></pre>
+    <ul>
+      <li>Creates array INSIDE A LOOP</li>
+      <li>Downcase creates copies of strings</li>
+      <li>include? causes both variables to be downcased</li>
+      <li>map, select, reject, inject create new arrays</li>
+    </ul>
+  </section>
+  <section>
+    <h2>SOLUTION: Do less work</h2>
+    <pre><code class='ruby'>string = params[:country]&#x000A;country = COUNTRY_CODE_MAP.detect do |k,v|&#x000A;  k.casecmp(string) == 0 || v.casecmp(string) == 0&#x000A;end</code></pre>
+    <ul>
+      <li>No array</li>
+      <li>No downcased copy of strings</li>
+      <li>|| instead of include?</li>
+    </ul>
+  </section>
+</section>
+<section>
 
-              def all_contact_ids
-                Contact.all.map &amp;:contact_id
-              ...
-            </code>
-          </pre>
-          <ul>
-          <li>Batch insert and deletes</li>
-          </ul>
-        </section>
+    <h2>Memoize!</h2>
+    <pre><code class='ruby'>def contact_ids&#x000A;  @contact_ids ||= params[:ids].split(',')&#x000A;end</code></pre>
+    <ul>
+      <li>First call stores result in an instance variable</li>
+      <li>Subsequent calls return the instance variable</li>
+    </ul>
 
-        <section>
-          <h2>Exceptions are expensive</h2>
-          <pre>
-            <code class="ruby">
-              def create
-                Contact.create! params
-              rescue ActiveRecord::RecordInvalid -> e
-                render status: 422, json: { errors: e.message }
-              end
-            </code>
-          </pre>
-        </section>
+</section>
+<section>
+  <section>
+    <h2>CAUSE: Redundancy Across Requests</h2>
+    <pre><code class='ruby'>def subscriber_confirmation&#x000A;  @subscriber_confirmation ||= expensive_lookup&#x000A;end</code></pre>
+    <ul>
+      <li>Lookup is expensive (external service / long db query / cpu intensive)</li>
+      <li>Value changes rarely under known circumstances</li>
+    </ul>
+  </section>
 
+  <section>
+    <h2>SOLUTION: Cache With Redis</h2>
+    <strong>Usage</strong>
+    <pre><code class='ruby'>def subscriber_confirmation&#x000A;  @subscriber_confirmation ||= Rails.cache.fetch(&#x000A;    "subscriber_confirmation:#{Current.account}",&#x000A;    :expires_in => LONG_TIME_IN_SECONDS&#x000A;  ) { | key| expensive_lookup(key) }&#x000A;end</code></pre>
+    <ul>
+      <li>Looks up value of key</li>
+      <li>Checks that key is not expired</li>
+      <li>
+        If value is missing or expired:
+        <ul>
+          <li>Calls block with key</li>
+          <li>Updates cache with result</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>View/action caching</h2>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>CAUSE: Exceptions as part of normal application flow</h2>
+    <pre><code class='ruby'>class SomeModel&#x000A;  def funky_method&#x000A;    unless complicated_action_succeeds&#x000A;      raise FunkyError, 'Something Funky Failed'&#x000A;    end&#x000A;  end&#x000A;end&#x000A;&#x000A;class SomeController&#x000A;  def some_action&#x000A;    response = SomeModel.new(params).funky_method&#x000A;    render status: 200, json: response&#x000A;  rescue FunkyError => e&#x000A;    render status: 400, json: {errors: 'Funky Failboat!'}&#x000A;  end&#x000A;end</code></pre>
+    <ul>
+      <li>Exception generates a backtrace</li>
+      <li>Exception is being raised manually</li>
+    </ul>
+  </section>
+  <section>
+    <h2>SOLUTION: Return Message not Exception</h2>
+    <pre><code class='ruby'>class SomeModel&#x000A;  def funky_method&#x000A;    unless complicated_action_succeeds&#x000A;      { error: 'Yeah, that happens' }&#x000A;    end&#x000A;  end&#x000A;end&#x000A;&#x000A;class SomeController&#x000A;  def some_action&#x000A;    response = SomeModel.new(params).funky_method&#x000A;    status = response[:error] ? 400 : 200&#x000A;    render status: status, json: response&#x000A;  end&#x000A;end&#x000A;</code></pre>
+    <ul>
+      <li>Return value indicates error</li>
+      <li>No exception at controller == No Backtrace</li>
+    </ul>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>CAUSE: Excessive and Expensive Logging</h2>
+    <pre><code class='ruby'>Rails.logger.debug "This is expensive #{some_expensive_method}"</code></pre>
+    <ul>
+      <li>message is created even if it is below logging level</li>
+    </ul>
+    <pre><code class='ruby'>big_array.each do |x|&#x000A;  Rails.logger.debug 'processing row'&#x000A;  ...&#x000A;end</code></pre>
+    <ul>
+      <li>logger is called n times with the same message</li>
+    </ul>
+  </section>
+  <section>
+    <h2>SOLUTION: Be Kind, Log Smart</h2>
+    <pre><code class='ruby'>if Rails.logger.debug?&#x000A;  Rails.logger.debug "This is expensive #{some_expensive_method}"&#x000A;end</code></pre>
+    <ul>
+      <li>Check if you are logging debug first</li>
+    </ul>
+    <pre><code class='ruby'>Rails.logger.debug "processing #{x.size} rows"&#x000A;big_array.each do |x|&#x000A;  ...&#x000A;end</code></pre>
+    <ul>
+      <li>logger is called once</li>
+      <li>information about array number of iterations is preserved</li>
+      <li>watch out for break outs or exceptions!</li>
+    </ul>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>CAUSE: Too Many AR Instances</h2>
+    <pre><code class='ruby'>def all_contact_ids&#x000A;  Contact.all.map &:contact_id&#x000A;end</code></pre>
+    <ul>
+      <li>Creates a lot of objects</li>
+      <li>Retrieves all columns, only uses contact_id</li>
+    </ul>
+  </section>
+  <section>
+    <h2>SOLUTION: Use Pluck</h2>
+    <pre><code class='ruby'>def all_contact_ids&#x000A;  Contact.all.pluck(:contact_id)&#x000A;end</code></pre>
+    <ul>
+      <li>Creates a single Array</li>
+      <li>Retrieves only contact_ids</li>
+    </ul>
+    <hr>
+    <small>In Rails 3 you can only pluck one column, but Rails 4 allows multiple!</small>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>CAUSE: Destroying Records Is Slow</h2>
+    <pre><code class='ruby'>class Contact&#x000A;  has_many :addresses, dependent: :destroy&#x000A;&#x000A;  def self.remove_bad_contacts&#x000A;    self.destroy_all(bad_contact: true)&#x000A;  end&#x000A;end&#x000A;</code></pre>
+    <ul>
+      <li>Instantiates each record</li>
+      <li>Calls destroy callbacks</li>
+      <li>Calls destroy on dependents <em>(more instances!)</em></li>
+    </ul>
+    <hr>
+    <small>If you don't have callbacks that need to run, and you can handle the dependants yourself, this is a big waste of memory and CPU.</small>
+  </section>
+  <section>
+    <h2>SOLUTION: Use Delete Instead</h2>
+    <pre><code class='ruby'>class Contact&#x000A;  has_many :addresses, dependent: :destroy&#x000A;&#x000A;  scope :bad_contacts, -> { where(bad_contact: true) }&#x000A;&#x000A;  def self.remove_bad_contacts&#x000A;    Address.delete_all contact_id: self.bad_contacts.pluck(:contact_id)&#x000A;    self.bad_contacts.delete_all&#x000A;  end&#x000A;end</code></pre>
+    <ul>
+      <li>Does not instantiate any AR records</li>
+      <li>Does not call destroy callbacks</li>
+      <li>Manually delete dependencies</li>
+    </ul>
+    <hr>
+    <small>
+      Be careful not to skip important logic, especially on those depenents!<br>
+      Consider a method on the dependent model that does this safely.
+    </small>
+  </section>
+</section>
+<section>
+  <section>
+    <h2>Problem: Reads for Validation</h2>
+    <pre><code class='ruby'>class Contact &lt; ActiveRecord::Base&#x000A;  validates :first_name,  uniqueness: {scope: :last_name}&#x000A;end</code></pre>
+    <ul>
+      <li>Saving a record requires a read and a write</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Solution: Let the Database do it</h2>
+    <pre><code class='ruby'>class Contact &lt; ActiveRecord::Base&#x000A;  around_save :check_uniqueness&#x000A;&#x000A;  def check_uniqueness&#x000A;    yield&#x000A;  rescue ActiveRecord::RecordNotUnique => exception&#x000A;    errors.add :base, "contact is not unique"&#x000A;    raise ActiveRecord::RecordInvalid.new(self)&#x000A;  end&#x000A;end&#x000A;&#x000A;# db migration&#x000A;add_index :contacts, [:firstname, :lastname], :unique => true&#x000A;</code></pre>
+    <ul>
+      <li>Database index for the unique fields</li>
+      <li>Mutate the exception to RecordInvalid</li>
+      <li>RecordInvalid is handled as if valid? had failed</li>
+    </ul>
+  </section>
+</section>
+
+<section>
+  <section>
+    <h2>Problem: Inserting Multiple Records</h2>
+    <ul>
+      <li>Many trips to the database</li>
+      <li>Database connection churn</li>
+      <li>Validations and callbacks</li>
+    </ul>
+    <div class='fragment'>
+      <hr>
+      <h2>Solution: Mass Insert</h2>
+      <ul>
+        <li>Handle Validation Up Front</li>
+        <li>Reconsider callbacks</li>
+        <li>Include a module that can build SQL by introspection</li>
+      </ul>
+    </div>
+  </section>
+</section>
         <section>
           <h3>MEASURE FIRST</h3>
-          <h3>MEASURE AFTER</h3>
           <h3>MEASURE OFTEN</h3>
           <h2>Meet the SLAs</h2>
           <p>Dinshaw Gobhai | <a href="mailto:dgobhai@constantcontact.com">dgobhai@constantcontact.com</a></p>
           <p>@tallfriend</p>
           <p><a href="https://github.com/dinshaw/meet-the-slas">github.com/dinshaw/meet-the-slas</a></p>
+          <p>Alex 'the beast' Berry</p>
+          <p>Andre 'the log grepper' Zelenkovas</p>
+          <p>Tom 'the meeting man' Beauvais</p>
         </section>
 
         </div>
